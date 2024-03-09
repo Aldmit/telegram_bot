@@ -25,7 +25,7 @@ from typing import Optional
 from aiogram.filters.callback_data import CallbackData # Добавляет объект для удобной работы и разбора каллбеков в айограме
 
 import os
-import sqlite3
+import sqlite3 as sq
 
 from config import Config, load_config
 
@@ -49,15 +49,15 @@ hsk = json.load(file)  # Разбираем полученные JSON данны
 hanzi = ["爱", "ai", "любовь"]
 
 
-async def irg_generate():
-    sub_level = await db_get_data()
+async def irg_generate(name,password):
+    sub_level = await db_get_data(name,password)
     print(f'Проверка числа в генераторе {sub_level[3]},{sub_level[4]}')
     if sub_level[3] > 15:
         r = random.randint(sub_level[3]-15, sub_level[3])
         a = hsk[r]["hanzi"]
         b = hsk[r]["pinyin"]
         c = hsk[r]["translations"]["rus"][0]
-        db_update_hanzi(a,b)
+        db_update_hanzi(a,b,name,password)
         print('Работает sub_level')
         return [a, b, c]
     else:
@@ -65,14 +65,14 @@ async def irg_generate():
         a = hsk[r]["hanzi"]
         b = hsk[r]["pinyin"]
         c = hsk[r]["translations"]["rus"][0]
-        db_update_hanzi(a,b)
+        db_update_hanzi(a,b,name,password)
         print('Работает else')
         return [a, b, c]
 
 
 
 async def db_create(): # Создание базы
-    conn = sqlite3.connect("database.sql") # Работа с подключением к БД через встроенный import sqlite3
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS users (id int auto_increment primary key, name varchar(50), pass varchar(50), level int(1), sub_level int(4), progress int(5), streak int(8), hanzi varchar(50), pinyin varchar(50))")
     conn.commit()
@@ -81,8 +81,8 @@ async def db_create(): # Создание базы
 
 
 async def db_insert_user(name, password): # Заведение нового пользователя
-    name = 'Aldmit'
-    password = '1234'
+    name = name
+    password = password
     level = 1
     sub_level = 10
     progress = 0 
@@ -90,7 +90,7 @@ async def db_insert_user(name, password): # Заведение нового по
     hanzi = '-'
     pinyin = '-'
 
-    conn = sqlite3.connect("database.sql") # Работа с подключением к БД через встроенный import sqlite3
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
     cur.execute("INSERT INTO users(name,pass,level,sub_level,progress,streak,hanzi,pinyin) VALUES ('%s', '%s', '%i', '%i', '%i', '%i', '%s', '%s')" %(name,password,level,sub_level,progress,streak,hanzi,pinyin))
     conn.commit()
@@ -98,10 +98,11 @@ async def db_insert_user(name, password): # Заведение нового по
     conn.close()
 
 
-async def db_get_data():
-    conn = sqlite3.connect("database.sql") # Работа с подключением к БД через встроенный import sqlite3
+
+async def db_get_data(name, password):
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
-    cur.execute("SELECT name,pass,level,sub_level,progress,streak,hanzi,pinyin FROM users WHERE name='Aldmit'")
+    cur.execute("SELECT name,pass,level,sub_level,progress,streak,hanzi,pinyin FROM users WHERE name='%s' AND pass='%s'" %(name,password))
     users = cur.fetchall()
     cur.close()
     conn.close()
@@ -111,19 +112,19 @@ async def db_get_data():
 
 
 async def db_update_data(name,password,level,sub_level,progress,streak):
-    conn = sqlite3.connect("database.sql") # Работа с подключением к БД через встроенный import sqlite3
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
-    cur.execute("UPDATE users SET level = '%s',sub_level = '%s',progress = '%s',streak = '%s' WHERE name='Aldmit'" %(level,sub_level,progress,streak))
+    cur.execute("UPDATE users SET level = '%s',sub_level = '%s',progress = '%s',streak = '%s' WHERE name='%s' AND pass='%s'" %(level,sub_level,progress,streak,name,password))
     conn.commit()
     cur.close()
     conn.close()
     # print('Update data ==-')
 
 
-def db_update_hanzi(hanzi,pinyin): # 
-    conn = sqlite3.connect("database.sql") # Работа с подключением к БД через встроенный import sqlite3
+def db_update_hanzi(hanzi,pinyin,name,password): # 
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
-    cur.execute("UPDATE users SET hanzi = '%s',pinyin = '%s' WHERE name='Aldmit'" %(hanzi,pinyin))
+    cur.execute("UPDATE users SET hanzi = '%s',pinyin = '%s' WHERE name='%s' AND pass='%s'" %(hanzi,pinyin,name,password))
     conn.commit()
     cur.close()
     conn.close()
@@ -137,93 +138,93 @@ class ChiStatus(StatesGroup):
 
 
 async def sub_level(name,password,count):
-    user_data = await db_get_data()
+    user_data = await db_get_data(name,password)
     diff = user_data[3] + count
     
     if diff == 5000:
         level = 7
-        await db_update_data('Aldmit','1234',level,diff,user_data[4],user_data[5])
+        await db_update_data(name,password,level,diff,user_data[4],user_data[5])
         return 'HSK 6 завершен. Поздравляю, мне больше нечему вас учить.'
     
     elif diff == 2500:
         level = 6
-        await db_update_data('Aldmit','1234',level,diff,user_data[4],user_data[5])
+        await db_update_data(name,password,level,diff,user_data[4],user_data[5])
         return 'Открыт HSK 6. Вы на пути к вершине мастерства.'
     
     elif diff == 1200:
         level = 5
-        await db_update_data('Aldmit','1234',level,diff,user_data[4],user_data[5])
+        await db_update_data(name,password,level,diff,user_data[4],user_data[5])
         return 'Открыт HSK 5. Ваш путь к верщине начинается здесь.'
 
     elif diff == 599:
         level = 4
-        await db_update_data('Aldmit','1234',level,diff,user_data[4],user_data[5])
+        await db_update_data(name,password,level,diff,user_data[4],user_data[5])
         return 'Вы переходите на HSK 4. Ваше упорство поражает.'
 
     elif diff == 300:
         level = 3
-        await db_update_data('Aldmit','1234',level,diff,user_data[4],user_data[5])
+        await db_update_data(name,password,level,diff,user_data[4],user_data[5])
         return 'HSK 2 взят, добро пожаловать в HSK 3. Поздравляю!'
 
     elif diff == 150:
         level = 2
-        await db_update_data('Aldmit','1234',level,diff,user_data[4],user_data[5])
+        await db_update_data(name,password,level,diff,user_data[4],user_data[5])
         return 'HSK 1 позади, поздравляю!'
     
     elif count == 1:
-        await db_update_data('Aldmit','1234',user_data[2],diff,user_data[4],user_data[5])
+        await db_update_data(name,password,user_data[2],diff,user_data[4],user_data[5])
         return 'Вы открыли новое слово!'
     
     elif count == -1:
-        await db_update_data('Aldmit','1234',user_data[2],diff,user_data[4],user_data[5])
+        await db_update_data(name,password,user_data[2],diff,user_data[4],user_data[5])
         return 'Одно из новых слов стало недоступно.'
     
     elif count == 0:
-        await db_update_data('Aldmit','1234',user_data[2],diff,user_data[4],user_data[5])
+        await db_update_data(name,password,user_data[2],diff,user_data[4],user_data[5])
         return "Я не могу опустить уровень ещё ниже 😅, пожалуйста пробуй с тем что есть)"
 
 
 
 async def progress(name,password,count):
-    user_data = await db_get_data()
+    user_data = await db_get_data(name,password)
     diff = user_data[4] + count
 
     if diff >= 5:
         diff = 0
-        await db_update_data('Aldmit','1234',user_data[2],user_data[3],diff,user_data[5])
-        return await sub_level('Aldmit','1234',1)
+        await db_update_data(name,password,user_data[2],user_data[3],diff,user_data[5])
+        return await sub_level(name,password,1)
 
     elif diff <= -5:
         diff = 0
         if user_data[3] <= 10:
-            await db_update_data('Aldmit','1234',user_data[2],user_data[3],diff,user_data[5])
-            return await sub_level('Aldmit','1234',0)
+            await db_update_data(name,password,user_data[2],user_data[3],diff,user_data[5])
+            return await sub_level(name,password,0)
         else:
-            await db_update_data('Aldmit','1234',user_data[2],user_data[3],diff,user_data[5])
-            return await sub_level('Aldmit','1234',-1)
+            await db_update_data(name,password,user_data[2],user_data[3],diff,user_data[5])
+            return await sub_level(name,password,-1)
 
     else:
-        await db_update_data('Aldmit','1234',user_data[2],user_data[3],diff,user_data[5])
+        await db_update_data(name,password,user_data[2],user_data[3],diff,user_data[5])
         return count
 
 
 async def streak(name,password,count):
-    user_data = await db_get_data()
+    user_data = await db_get_data(name,password)
     print(f'Получение данынх в стрике: {user_data}')
     diff = user_data[5] + count
 
     if diff >= 10:
         diff = 0
-        await db_update_data('Aldmit','1234',user_data[2],user_data[3],user_data[4],diff)
-        return await progress('Aldmit','1234',1)
+        await db_update_data(name,password,user_data[2],user_data[3],user_data[4],diff)
+        return await progress(name,password,1)
 
     elif diff <= -10:
         diff = 0
-        await db_update_data('Aldmit','1234',user_data[2],user_data[3],user_data[4],diff)
-        return await progress('Aldmit','1234',-1)
+        await db_update_data(name,password,user_data[2],user_data[3],user_data[4],diff)
+        return await progress(name,password,-1)
     
     else:
-        await db_update_data('Aldmit','1234',user_data[2],user_data[3],user_data[4],diff)
+        await db_update_data(name,password,user_data[2],user_data[3],user_data[4],diff)
         return count
 
 
@@ -256,15 +257,31 @@ async def set_user_status(message: Message,command: CommandObject):
             "/set_status 1 120 19 9"
         )
         return
-    await db_update_data('Aldmit','1234', level, sub_level, progress, streak)
+    await db_update_data(message.from_user.username, message.chat.id, level, sub_level, progress, streak)
     await message.answer(f"Уровень изменён:\nlevel : {level}\nsub_level: {sub_level}\nprogress: {progress}\nstreak: {streak}")
 
 
 
 @dp.message(Command("chi"))
 async def cmd_start(message: types.Message, state: FSMContext):
-    await message.answer(f"Рад тебя видеть, <b>{message.from_user.first_name}</b> :3")
+    await message.answer(f"Рад тебя видеть здесь, <b>{message.from_user.first_name}</b> :3")
 
+    # Проверить наличие бд
+    #     Если бд нет - создать
+    #     Если есть - идём дальше
+    await db_create()
+    
+    # Проверить наличие таблицы в бд
+    #     Если таблицы нет - создать
+    #     Если есть - идём дальше
+    # Проверить наличие юзера в таблице
+    #     Если юзера нет - создать
+    #     Если есть - идём дальше
+    try:
+        await db_get_data(message.from_user.username, message.chat.id)
+    except:
+        await db_insert_user(message.from_user.username, message.chat.id)
+    
     # print(f'🫢🫢🫢',end="")
     # for i in message.chat:
     #     print(i)
@@ -286,52 +303,56 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.callback_query(F.data == "chinese_train")
 async def send_chinese_train(callback: types.CallbackQuery, state: FSMContext):
-    print(f'Начало работы, дб_гет: {await db_get_data()}')
-    hanzi = await irg_generate()
+
+    print(f'Начало работы, дб_гет: {await db_get_data(callback.from_user.username, callback.from_user.id)}')
+    # print(f"{callback.from_user.username} === И === {callback.from_user.id}")
+
+    hanzi = await irg_generate(callback.from_user.username, callback.from_user.id)
     await callback.message.answer(f"Напиши пиньинь ироглифа:\n{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
     await state.set_state(ChiStatus.CHI_ON)
     await callback.answer(
-        text="Вводи кандзи вида ‘爱’ через пиньинь.\n\nЕсли забыл - нажми на спойлер, чтобы подсмотреть.\n\nКаждый правильный ответ даёт тебе +1 бал, каждый неправильный отнимает -1.\n\nУспехов!",
+        text="Вводи кандзи вида ‘爱’ через пиньинь.\n\nЕсли забыл - нажми на спойлер, чтобы подсмотреть.\n\nКаждый правильный ответ даёт тебе +1 балл, каждый неправильный отнимает -1.\n\nУспехов!",
         show_alert=True
     )
 
 @dp.message(ChiStatus.CHI_ON, F.text)
 async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
-    h = await db_get_data()
+    h = await db_get_data(message.from_user.username, message.chat.id)
     print(h)
     if message.text.lower() == h[6]:
-        answer = await streak('Aldmit','1234',1)
+        answer = await streak(message.from_user.username, message.chat.id,1)
         if answer == 1:
             print('Стрик увеличен')
         else:
             await message.answer(f'{answer}')
 
-        hanzi = await irg_generate()
+        hanzi = await irg_generate(message.from_user.username, message.chat.id)
         await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
         
     elif message.text.lower() == '/exit':
         await state.set_state(ChiStatus.CHI_OFF)
-        await message.answer(f"Тренировка завершена")
+        await message.answer(f"Игра завершена, возвращайся ещё:3")
 
     elif message.text.lower() == '/status':
-        user = await db_get_data()
+        user = await db_get_data(message.from_user.username, message.chat.id)
         print(user)
-        await message.answer(f"Текущий уровень: {user[2]}\nУровень открытых слов: {user[3]}\nПрогресс: {user[4]}\nДействующий стрик: {user[5]}")
+        await message.answer(f"{user[0]}-{user[1]}\n\nТекущий уровень: {user[2]}\nУровень открытых слов: {user[3]}\nПрогресс: {user[4]}\nДействующий стрик: {user[5]}")
 
     else:
-        if await streak('Aldmit','1234',-1) == -1:
+        if await streak(message.from_user.username, message.chat.id,-1) == -1:
             print('Стрик уменьшен')
         await message.answer(f"Не верно, {h[7]}")
 
 
 
+@dp.message(Command("start"))
+async def cmd_start(message: types.Message, state: FSMContext):
+    await message.answer(f"На данный момент доступна только одна игра: CHI\n\nЧтобы поиграть в неё, тебе нужно установить китайскую расскладку клавиатуры 'Пиньинь - упрощённый'\n\n После этого набирай /chi для старта :3")
+
 
 
 # Запуск процесса поллинга новых апдейтов
 async def main():
-    # await db_create()
-    # await db_insert_user('Aldmit','1234')
-    # print(await db_get_data())
     await dp.start_polling(bot)
 
 
