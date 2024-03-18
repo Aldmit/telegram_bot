@@ -466,6 +466,13 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
                     "/restore 爱"
                 )
                 return
+        except ValueError:
+            await message.answer(
+                "Ошибка: неправильный формат команды. Пример:\n"
+                "/restore hanzi\n"
+                "/restore 爱"
+            )
+            return
         await db_update_wordlist(message.from_user.username, message.chat.id, split_message[1], -1)
         
         await message.answer(f"Кандзи {split_message[1]} успешно восстановлено и доступно для повторения :3")
