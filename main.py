@@ -450,15 +450,29 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
     
     elif '/restore' in message.text.lower():
-        user_data = await db_get_data(message.from_user.username, message.chat.id)
-        wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,user_data[6],1)
-
         split_message = message.text.lower().split(' ', maxsplit=1)
+        user_data = await db_get_data(message.from_user.username, message.chat.id)
+
+        if split_message[1] is None:
+            await message.answer("Ошибка: не переданы аргументы")
+            return
+        try:
+            wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
+            list_with_words = ', '.join(wordlist.values())
+            if split_message[1] not in list_with_words:
+                await message.answer(
+                    "Ошибка: в вордлисте слова нет. Проверьте правильность слова:\n"
+                    "/restore [hanzi]\n"
+                    "/restore 爱"
+                )
+                return
         await db_update_wordlist(message.from_user.username, message.chat.id, split_message[1], -1)
-        await message.answer(f"Кандзи {split_message[1]} успешно восстановлено :3")
+        
+        await message.answer(f"Кандзи {split_message[1]} успешно восстановлено и доступно для повторения :3")
 
         hanzi = await irg_generate(message.from_user.username, message.chat.id)
         await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        
 
     else:
         if await streak(message.from_user.username, message.chat.id,-1) == -1:
