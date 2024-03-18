@@ -115,7 +115,7 @@ async def db_insert_user(name, password): # Заведение нового по
 async def db_insert_wordlist(name, password): # Заведение новой таблицы слов
     name = name
     password = password
-    hanzi = {0:'-'}
+    hanzi = {0:'Твой список кандзи'}
     hanzi_json = json.dumps(hanzi)
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
