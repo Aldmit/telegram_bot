@@ -435,11 +435,11 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         user_data = await db_get_data(message.from_user.username, message.chat.id)
         print(user_data)
         await message.answer(f"{user_data[0]}-{user_data[1]}\n\nТекущий уровень: {user_data[2]}\nУровень открытых слов: {user_data[3]}\nПрогресс: {user_data[4]}\nДействующий стрик: {user_data[5]}")
-        await message.answer(f"Если хочешь посмотреть скрытые слова, набери: /wordlist\n\nЕсли хочешь скрыть слово из генератора: /skip")
+        await message.answer(f"Если хочешь посмотреть скрытые слова, набери:\n/wordlist\n\nЕсли хочешь скрыть слово из генератора:\n/skip")
 
     elif message.text.lower() == '/wordlist':
         wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
-        await message.answer(wordlist.values())
+        await message.answer(', '.join(wordlist.values()))
 
     elif message.text.lower() == '/skip':
         user_data = await db_get_data(message.from_user.username, message.chat.id)
