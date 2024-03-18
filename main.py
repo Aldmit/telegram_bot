@@ -51,23 +51,31 @@ hanzi = ["爱", "ai", "любовь"]
 
 async def irg_generate(name,password):
     sub_level = await db_get_data(name,password)
-    print(f'Проверка числа в генераторе {sub_level[3]},{sub_level[4]}')
+    wordlist = await db_update_wordlist(name, password,'-',0)
+
+    # print(f'Проверка числа в генераторе {sub_level[3]},{sub_level[4]} += Проверка данныз из wordlist: {wordlist}')
     if sub_level[3] > 15:
         r = random.randint(sub_level[3]-15, sub_level[3])
-        a = hsk[r]["hanzi"]
-        b = hsk[r]["pinyin"]
-        c = hsk[r]["translations"]["rus"][0]
-        db_update_hanzi(a,b,name,password)
-        print('Работает sub_level')
-        return [a, b, c]
+        if hsk[r]["hanzi"] not in wordlist.values():
+            a = hsk[r]["hanzi"]
+            b = hsk[r]["pinyin"]
+            c = hsk[r]["translations"]["rus"][0]
+            db_update_hanzi(a,b,name,password)
+            print('Работает sub_level')
+            return [a, b, c]
+        else:
+            return await irg_generate(name,password)
     else:
         r = random.randint(0, sub_level[3])
-        a = hsk[r]["hanzi"]
-        b = hsk[r]["pinyin"]
-        c = hsk[r]["translations"]["rus"][0]
-        db_update_hanzi(a,b,name,password)
-        print('Работает else')
-        return [a, b, c]
+        if hsk[r]["hanzi"] not in wordlist.values():
+            a = hsk[r]["hanzi"]
+            b = hsk[r]["pinyin"]
+            c = hsk[r]["translations"]["rus"][0]
+            db_update_hanzi(a,b,name,password)
+            print('Работает else')
+            return [a, b, c]
+        else:
+            return await irg_generate(name,password)
 
 
 
@@ -75,6 +83,13 @@ async def db_create(): # Создание базы
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
     cur.execute("CREATE TABLE IF NOT EXISTS users (id int auto_increment primary key, name varchar(50), pass varchar(50), level int(1), sub_level int(4), progress int(5), streak int(8), hanzi varchar(50), pinyin varchar(50))")
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS wordlist(id int auto_increment primary key, name varchar(50), pass varchar(50), hanzi varchar(100))")
     conn.commit()
     cur.close()
     conn.close()
@@ -97,6 +112,17 @@ async def db_insert_user(name, password): # Заведение нового по
     cur.close()
     conn.close()
 
+async def db_insert_wordlist(name, password): # Заведение новой таблицы слов
+    name = name
+    password = password
+    hanzi = {0:'-'}
+    hanzi_json = json.dumps(hanzi)
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("INSERT INTO wordlist(name,pass,hanzi) VALUES ('%s', '%s', '%s')" %(name,password,hanzi_json))
+    conn.commit()
+    cur.close()
+    conn.close()
 
 
 async def db_get_data(name, password):
@@ -107,7 +133,6 @@ async def db_get_data(name, password):
     cur.close()
     conn.close()
     # print('Get data ==-')
-    # print(users)
     return users[0]
 
 
@@ -129,6 +154,80 @@ def db_update_hanzi(hanzi,pinyin,name,password): #
     cur.close()
     conn.close()
     # print('Update hanzi ==-')
+
+
+    # Добавить режимы "добавить", "удалить" 
+async def db_update_wordlist(name,password,hanzi,func_mode):
+    # Отдаёт готовый список значений
+    if func_mode == 0:
+        conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+        cur = conn.cursor()
+        cur.execute("SELECT hanzi FROM wordlist WHERE name='%s' AND pass='%s'" %(name,password))
+        user_wordlist_json = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        hanzi_list = json.loads(user_wordlist_json[0][0])
+        return hanzi_list
+    
+    # Добавляет новое слово в вордлист
+    elif func_mode == 1:
+        conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+        cur = conn.cursor()
+        cur.execute("SELECT hanzi FROM wordlist WHERE name='%s' AND pass='%s'" %(name,password))
+        user_wordlist_json = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # print(f"JSON -- {user_wordlist_json[0][0]}")
+
+        hanzi_list = json.loads(user_wordlist_json[0][0]) # Распаковать из json
+        hanzi_list[len(hanzi_list)] = hanzi
+        # print(f"NO JSON -- {hanzi_list}")
+        json_hanzi = json.dumps(hanzi_list) # Упаковать в json
+
+        conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+        cur = conn.cursor()
+        cur.execute("UPDATE wordlist SET hanzi = '%s' WHERE name='%s' AND pass='%s'" %(json_hanzi,name,password))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return f"Слово {hanzi} добавлено в словарь."
+    
+    # Удаляет слово из wordlist
+    elif func_mode == -1:
+        conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+        cur = conn.cursor()
+        cur.execute("SELECT hanzi FROM wordlist WHERE name='%s' AND pass='%s'" %(name,password))
+        user_wordlist_json = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        # print(f"JSON -- {user_wordlist_json[0][0]}")
+        hanzi_list = json.loads(user_wordlist_json[0][0]) # Распаковать из json
+
+        new_list = dict()
+        for i in hanzi_list:
+            if i == 0 and hanzi_list[i] != hanzi: 
+                print(i,' >> ',hanzi_list[i],' >> ',hanzi)
+                new_list[len(new_list)] = hanzi_list[i]
+
+            if hanzi_list[i] != hanzi:
+                print(i,' => ',hanzi_list[i],' => ',hanzi)
+                new_list[len(new_list)] = hanzi_list[i]
+
+        # print(f"NO JSON -- {new_list}")
+        
+        json_hanzi = json.dumps(new_list) # Упаковать в json
+
+        conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+        cur = conn.cursor()
+        cur.execute("UPDATE wordlist SET hanzi = '%s' WHERE name='%s' AND pass='%s'" %(json_hanzi,name,password))
+        conn.commit()
+        cur.close()
+        conn.close()
+        return f"Слово {hanzi} удалено из словаря."
+
 
 
 class ChiStatus(StatesGroup):
@@ -266,22 +365,21 @@ async def set_user_status(message: Message,command: CommandObject):
 async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer(f"Рад тебя видеть здесь, <b>{message.from_user.first_name}</b> :3")
 
-    # Проверить наличие бд
-    #     Если бд нет - создать
-    #     Если есть - идём дальше
+    # Проверить наличие бд, если бд нет - создать, если есть - идём дальше
     await db_create()
     
-    # Проверить наличие таблицы в бд
-    #     Если таблицы нет - создать
-    #     Если есть - идём дальше
-    # Проверить наличие юзера в таблице
-    #     Если юзера нет - создать
-    #     Если есть - идём дальше
     try:
         await db_get_data(message.from_user.username, message.chat.id)
     except:
         await db_insert_user(message.from_user.username, message.chat.id)
+
+
+    try:
+        await db_update_wordlist(message.from_user.username, message.chat.id, "-", 0)
+    except:
+        await db_insert_wordlist(message.from_user.username, message.chat.id)
     
+
     # print(f'🫢🫢🫢',end="")
     # for i in message.chat:
     #     print(i)
@@ -317,9 +415,9 @@ async def send_chinese_train(callback: types.CallbackQuery, state: FSMContext):
 
 @dp.message(ChiStatus.CHI_ON, F.text)
 async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
-    h = await db_get_data(message.from_user.username, message.chat.id)
-    print(h)
-    if message.text.lower() == h[6]:
+    user_data = await db_get_data(message.from_user.username, message.chat.id)
+    
+    if message.text.lower() == user_data[6]:
         answer = await streak(message.from_user.username, message.chat.id,1)
         if answer == 1:
             print('Стрик увеличен')
@@ -334,14 +432,22 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         await message.answer(f"Игра завершена, возвращайся ещё:3")
 
     elif message.text.lower() == '/status':
-        user = await db_get_data(message.from_user.username, message.chat.id)
-        print(user)
-        await message.answer(f"{user[0]}-{user[1]}\n\nТекущий уровень: {user[2]}\nУровень открытых слов: {user[3]}\nПрогресс: {user[4]}\nДействующий стрик: {user[5]}")
+        user_data = await db_get_data(message.from_user.username, message.chat.id)
+        print(user_data)
+        await message.answer(f"{user_data[0]}-{user_data[1]}\n\nТекущий уровень: {user_data[2]}\nУровень открытых слов: {user_data[3]}\nПрогресс: {user_data[4]}\nДействующий стрик: {user_data[5]}")
+    
+    elif message.text.lower() == '/skip':
+        user_data = await db_get_data(message.from_user.username, message.chat.id)
+        status_wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,user_data[6],1)
+        await message.answer(f"Кандзи {user_data[6]} успешно скрыто :3")
+
+        hanzi = await irg_generate(message.from_user.username, message.chat.id)
+        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
 
     else:
         if await streak(message.from_user.username, message.chat.id,-1) == -1:
             print('Стрик уменьшен')
-        await message.answer(f"Не верно, {h[7]}")
+        await message.answer(f"Не верно, {user_data[7]}")
 
 
 
