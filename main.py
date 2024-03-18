@@ -443,8 +443,19 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
 
     elif message.text.lower() == '/skip':
         user_data = await db_get_data(message.from_user.username, message.chat.id)
-        status_wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,user_data[6],1)
+        wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,user_data[6],1)
         await message.answer(f"Кандзи {user_data[6]} успешно скрыто :3")
+
+        hanzi = await irg_generate(message.from_user.username, message.chat.id)
+        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+    
+    elif '/restore' in message.text.lower():
+        user_data = await db_get_data(message.from_user.username, message.chat.id)
+        wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,user_data[6],1)
+
+        split_message = message.text.lower().split(' ', maxsplit=1)
+        await db_update_wordlist(message.from_user.username, message.chat.id, split_message[1], -1)
+        await message.answer(f"Кандзи {split_message[1]} успешно восстановлено :3")
 
         hanzi = await irg_generate(message.from_user.username, message.chat.id)
         await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
@@ -456,24 +467,24 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
 
 
 
-@dp.message(ChiStatus.CHI_ON, Command("restore"))
-async def set_user_status(message: Message,command: CommandObject):
-    if command.args is None:
-        await message.answer("Ошибка: не переданы аргументы")
-        return
+# @dp.message(ChiStatus.CHI_ON, Command("restore"))
+# async def set_user_status(message: Message,command: CommandObject):
+#     if command.args is None:
+#         await message.answer("Ошибка: не переданы аргументы")
+#         return
     
-    try:
-        hanzi = command.args
+#     try:
+#         hanzi = command.args
 
-    except ValueError:
-        await message.answer(
-            "Ошибка: неправильный формат команды. Пример:\n"
-            "/restore hanzi\n"
-            "/restore 爱"
-        )
-        return
-    word = await db_update_wordlist(message.from_user.username, message.chat.id, hanzi, 1)
-    await message.answer(f"Слово {hanzi} восстановлено и доступно для повторения")
+#     except ValueError:
+#         await message.answer(
+#             "Ошибка: неправильный формат команды. Пример:\n"
+#             "/restore hanzi\n"
+#             "/restore 爱"
+#         )
+#         return
+#     word = await db_update_wordlist(message.from_user.username, message.chat.id, hanzi, -1)
+#     await message.answer(f"Слово {hanzi} восстановлено и доступно для повторения")
 
 
 
