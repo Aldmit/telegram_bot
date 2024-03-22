@@ -54,28 +54,28 @@ async def irg_generate(name,password):
     wordlist = await db_update_wordlist(name, password,'-',0)
 
     # print(f'Проверка числа в генераторе {sub_level[3]},{sub_level[4]} += Проверка данныз из wordlist: {wordlist}')
-    if sub_level[3] > 15:
-        r = random.randint(sub_level[3]-15, sub_level[3])
-        if hsk[r]["hanzi"] not in wordlist.values():
-            a = hsk[r]["hanzi"]
-            b = hsk[r]["pinyin"]
-            c = hsk[r]["translations"]["rus"][0]
-            db_update_hanzi(a,b,name,password)
-            print('Работает sub_level')
-            return [a, b, c]
-        else:
-            return await irg_generate(name,password)
+    # if sub_level[3] > 15:
+    #     r = random.randint(sub_level[3]-15, sub_level[3])
+    #     if hsk[r]["hanzi"] not in wordlist.values():
+    #         a = hsk[r]["hanzi"]
+    #         b = hsk[r]["pinyin"]
+    #         c = hsk[r]["translations"]["rus"][0]
+    #         db_update_hanzi(a,b,name,password)
+    #         print('Работает sub_level')
+    #         return [a, b, c]
+    #     else:
+    #         return await irg_generate(name,password)
+    # else:
+    r = random.randint(0, sub_level[3])
+    if hsk[r]["hanzi"] not in wordlist.values():
+        a = hsk[r]["hanzi"]
+        b = hsk[r]["pinyin"]
+        c = hsk[r]["translations"]["rus"][0]
+        db_update_hanzi(a,b,name,password)
+        # print('Работает else')
+        return [a, b, c]
     else:
-        r = random.randint(0, sub_level[3])
-        if hsk[r]["hanzi"] not in wordlist.values():
-            a = hsk[r]["hanzi"]
-            b = hsk[r]["pinyin"]
-            c = hsk[r]["translations"]["rus"][0]
-            db_update_hanzi(a,b,name,password)
-            print('Работает else')
-            return [a, b, c]
-        else:
-            return await irg_generate(name,password)
+        return await irg_generate(name,password)
 
 
 
@@ -435,7 +435,7 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         user_data = await db_get_data(message.from_user.username, message.chat.id)
         print(user_data)
         await message.answer(f"{user_data[0]}-{user_data[1]}\n\nТекущий уровень: {user_data[2]}\nУровень открытых слов: {user_data[3]}\nПрогресс: {user_data[4]}\nДействующий стрик: {user_data[5]}")
-        await message.answer(f"Команды работы с словарём:\n/wordlist – скрытые слова\n/skip – скрыть слово\n/restore [хандзи] – вернуть слово")
+        await message.answer(f"Команды работы со словарём:\n/wordlist – скрытые слова\n/skip – скрыть слово\n/restore [хандзи] – вернуть слово")
 
     elif message.text.lower() == '/wordlist':
         wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
