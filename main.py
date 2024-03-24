@@ -309,15 +309,15 @@ async def progress(name,password,count):
 
 async def streak(name,password,count):
     user_data = await db_get_data(name,password)
-    print(f'Получение данынх в стрике: {user_data}')
+    print(f'Получение данных в стрике: {user_data}')
     diff = user_data[5] + count
 
-    if diff >= 10:
+    if diff >= 7:
         diff = 0
         await db_update_data(name,password,user_data[2],user_data[3],user_data[4],diff)
         return await progress(name,password,1)
 
-    elif diff <= -10:
+    elif diff <= -7:
         diff = 0
         await db_update_data(name,password,user_data[2],user_data[3],user_data[4],diff)
         return await progress(name,password,-1)
