@@ -41,18 +41,44 @@ bot = Bot(BOT_TOKEN, parse_mode="HTML")
 # Диспетчер
 dp = Dispatcher()
 
-path = os.path.dirname(
-    os.path.abspath(__file__)
-)  # Отправка файлов пользователю картинка, музыка, видео
-file = open(f"{path}/hsk.json", "rb")
+path = os.path.dirname(os.path.abspath(__file__)) # Получение текущего пути к файлу
+file = open(f"{path}/hsk.json", "rb") # Открытие словаря для получения слов
 hsk = json.load(file)  # Разбираем полученные JSON данные в читабельный формат
-hanzi = ["爱", "ai", "любовь"]
+hanzi = ["爱", "ai", "любовь"] 
 
 
 async def irg_generate(name,password):
     sub_level = await db_get_data(name,password)
     wordlist = await db_update_wordlist(name, password,'-',0)
 
+    word_index = 0
+    selected_word = list()
+
+    while (word_index <= sub_level[3]):
+        if hsk[word_index]["hanzi"] not in wordlist.values():
+            selected_word.append(hsk[word_index])
+        word_index+=1
+
+    # print(selected_word)
+    r = random.randint(0, len(selected_word)-1)
+    # print(selected_word[r])
+    a = selected_word[r]["hanzi"]
+    b = selected_word[r]["pinyin"]
+    c = selected_word[r]["translations"]["rus"][0]
+    db_update_hanzi(a,b,name,password)
+    return [a, b, c]
+
+    # r = random.randint(0, sub_level[3])
+    # if hsk[r]["hanzi"] not in wordlist.values():  # проверка на словарь
+    #     a = hsk[r]["hanzi"]
+    #     b = hsk[r]["pinyin"]
+    #     c = hsk[r]["translations"]["rus"][0]
+    #     db_update_hanzi(a,b,name,password)
+    #     # print('Работает else')
+    #     return [a, b, c]
+    # else:
+    #     return await irg_generate(name,password)
+    
     # print(f'Проверка числа в генераторе {sub_level[3]},{sub_level[4]} += Проверка данныз из wordlist: {wordlist}')
     # if sub_level[3] > 15:
     #     r = random.randint(sub_level[3]-15, sub_level[3])
@@ -66,16 +92,6 @@ async def irg_generate(name,password):
     #     else:
     #         return await irg_generate(name,password)
     # else:
-    r = random.randint(0, sub_level[3])
-    if hsk[r]["hanzi"] not in wordlist.values():
-        a = hsk[r]["hanzi"]
-        b = hsk[r]["pinyin"]
-        c = hsk[r]["translations"]["rus"][0]
-        db_update_hanzi(a,b,name,password)
-        # print('Работает else')
-        return [a, b, c]
-    else:
-        return await irg_generate(name,password)
 
 
 
@@ -179,11 +195,8 @@ async def db_update_wordlist(name,password,hanzi,func_mode):
         cur.close()
         conn.close()
 
-        # print(f"JSON -- {user_wordlist_json[0][0]}")
-
         hanzi_list = json.loads(user_wordlist_json[0][0]) # Распаковать из json
         hanzi_list[len(hanzi_list)] = hanzi
-        # print(f"NO JSON -- {hanzi_list}")
         json_hanzi = json.dumps(hanzi_list) # Упаковать в json
 
         conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
@@ -309,7 +322,7 @@ async def progress(name,password,count):
 
 async def streak(name,password,count):
     user_data = await db_get_data(name,password)
-    print(f'Получение данных в стрике: {user_data}')
+    # print(f'Получение данных в стрике: {user_data}')
     diff = user_data[5] + count
 
     if diff >= 7:
@@ -391,7 +404,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     builder = InlineKeyboardBuilder()
     builder.add(
         types.InlineKeyboardButton(
-            text="Начать игру", callback_data="chinese_train"
+            text="Начать игру в 汉语", callback_data="chinese_train"
         )
     )
     await message.answer(
@@ -400,9 +413,9 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 
 @dp.callback_query(F.data == "chinese_train")
-async def send_chinese_train(callback: types.CallbackQuery, state: FSMContext):
+async def start_chinese_train(callback: types.CallbackQuery, state: FSMContext):
 
-    print(f'Начало работы, дб_гет: {await db_get_data(callback.from_user.username, callback.from_user.id)}')
+    # print(f'Начало работы, дб_гет: {await db_get_data(callback.from_user.username, callback.from_user.id)}')
     # print(f"{callback.from_user.username} === И === {callback.from_user.id}")
 
     hanzi = await irg_generate(callback.from_user.username, callback.from_user.id)
