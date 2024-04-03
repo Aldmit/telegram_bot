@@ -1,6 +1,8 @@
 
 import json
 import sqlite3 as sq
+from random import shuffle
+from math import sqrt,ceil
 
 hanzi = ["爱", "ai", "любовь"] 
 
@@ -18,7 +20,17 @@ async def db_create(): # Создание базы
     conn.commit()
     cur.close()
     conn.close()
+    
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS textlist(id int auto_increment primary key, name varchar(50), pass varchar(50), text varchar(100), text_gen varchar(100))")
+    conn.commit()
+    cur.close()
+    conn.close()
 
+
+# = = = = = = = INSERTS = = = = = = = = = =
+    
 
 async def db_insert_user(name, password): # Заведение нового пользователя
     name = name
@@ -49,6 +61,21 @@ async def db_insert_wordlist(name, password): # Заведение новой т
     cur.close()
     conn.close()
 
+async def db_insert_textlist(name, password): # Заведение новой таблицы слов
+    name = name
+    password = password
+    text = ""
+    text_gen = ""
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("INSERT INTO textlist(name,pass,text,text_gen) VALUES ('%s', '%s', '%s', '%s')" %(name,password,text,text_gen))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
+# = = = = = = = GETS = = = = = = = = = =
+    
 
 async def db_get_data(name, password):
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
@@ -60,6 +87,21 @@ async def db_get_data(name, password):
     # print('Get data ==-')
     return users[0]
 
+
+async def db_get_textgen(name, password):
+    
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("SELECT text_gen FROM textlist WHERE name='%s' AND pass='%s'" %(name,password))
+    text_gen = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return text_gen[0][0]
+    
+
+# = = = = = = = UPDATES = = = = = = = = = =
+    
 
 async def db_update_data(name,password,level,sub_level,progress,streak):
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
@@ -81,7 +123,6 @@ def db_update_hanzi(hanzi,pinyin,name,password): #
     # print('Update hanzi ==-')
 
 
-    # Добавить режимы "добавить", "удалить" 
 async def db_update_wordlist(name,password,hanzi,func_mode):
     # Отдаёт готовый список значений
     if func_mode == 0:
@@ -114,6 +155,9 @@ async def db_update_wordlist(name,password,hanzi,func_mode):
         conn.commit()
         cur.close()
         conn.close()
+
+        await db_update_textlist(name,password)
+
         return f"Слово {hanzi} добавлено в словарь."
     
     # Удаляет слово из wordlist
@@ -148,5 +192,43 @@ async def db_update_wordlist(name,password,hanzi,func_mode):
         conn.commit()
         cur.close()
         conn.close()
+
+        await db_update_textlist(name,password)
+
         return f"Слово {hanzi} удалено из словаря."
 
+
+
+
+
+
+
+async def db_update_textlist(name,password):
+
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("SELECT hanzi FROM wordlist WHERE name='%s' AND pass='%s'" %(name,password))
+    text_json = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    hanzi_list = json.loads(text_json[0][0]) # Распаковать из json
+    hanzi_text = ','.join(hanzi_list.values()).split(',') # cоздаём массив для перемешки
+    shuffle(hanzi_text)
+
+    # print(f"\n === 1 === \n{hanzi_text}\n\n")
+    # print(f"\n === 2 === \n{len(hanzi_text)}\n\n")
+    # print(f"\n === 3 === \n{sqrt(len(hanzi_text))}\n\n")
+    # print(f"\n === 4 === \n{int(ceil(sqrt(len(hanzi_text))))}\n\n")
+    # print(f"\n === 5 === \n{hanzi_text[:int(ceil(sqrt(len(hanzi_text))))]}\n\n")
+
+    hanzi_text = ''.join(hanzi_text[:int(ceil(sqrt(len(hanzi_text))))]) # готовый перемешанный текст
+
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("UPDATE textlist SET text='%s',text_gen='%s' WHERE name='%s' AND pass='%s'" %(text_json[0][0],hanzi_text,name,password))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+    return hanzi_text

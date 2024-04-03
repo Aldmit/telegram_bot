@@ -40,12 +40,15 @@ async def cmd_start(message: types.Message, state: FSMContext):
     except:
         await db_insert_user(message.from_user.username, message.chat.id)
 
-
     try:
         await db_update_wordlist(message.from_user.username, message.chat.id, "-", 0)
     except:
         await db_insert_wordlist(message.from_user.username, message.chat.id)
     
+    try:
+        await db_get_textgen(message.from_user.username, message.chat.id)
+    except:
+        await db_insert_textlist(message.from_user.username, message.chat.id)
 
     # print(f'🫢🫢🫢',end="")
     # for i in message.chat:
@@ -184,20 +187,34 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
 
 @router.callback_query(F.data == "chinese_train_2")
 async def start_chinese_train_2(callback: types.CallbackQuery, state: FSMContext):
-    hanzi_list = await db_update_wordlist(callback.from_user.username, callback.from_user.id,"-", 0)
 
-    await callback.message.answer(f"{await kanzi_text_shuffle(hanzi_list)}")
-    # await callback.message.answer(f"{hanzi_text}")
+    a = await db_update_textlist(callback.from_user.username, callback.from_user.id)
+
+    await callback.message.answer(f"{await db_get_textgen(callback.from_user.username, callback.from_user.id)}")
+    
     await state.set_state(ChiStatus.CHI_ON_2)
     await callback.answer(
         text="Перед тобой рандомный китайский текст из иероглифов, которые ты уже знаешь. Просто перепиши его)\n\nУспехов!",
         show_alert=True
     )
 
+
 @router.message(ChiStatus.CHI_ON_2, F.text)
 async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
-    hanzi_list = await db_update_wordlist(message.from_user.username, message.from_user.id,"-", 0)
-    await message.answer(f"{await kanzi_text_shuffle(hanzi_list)}")
+    text_gen = await db_get_textgen(message.from_user.username, message.chat.id)
+
+    if message.text.lower() == text_gen:
+        await db_update_textlist(message.from_user.username, message.chat.id)
+        await message.answer(f"{await db_get_textgen(message.from_user.username, message.chat.id)}")
+
+        
+    elif message.text.lower() == '/exit':
+        await state.set_state(ChiStatus.CHI_OFF)
+        await message.answer(f"Игра завершена, возвращайся ещё:3")
+
+    else:
+        await message.answer(f"Не верно, попробуй ещё раз:3")
+
 
 
 
