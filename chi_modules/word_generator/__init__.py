@@ -1,0 +1,1 @@
+from .chi_word_generator_func import *
