@@ -30,6 +30,7 @@ class ChiStatus(StatesGroup):
 
 @router.message(Command("chi"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    await message.answer_sticker(r'CAACAgQAAxkBAAEL241mESWkgPb6zmSag044fXsFfVdnFQACQwcAAluO6VN4345BS4i5szQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
     await message.answer(f"Рад тебя видеть здесь, <b>{message.from_user.first_name}</b> :3")
 
     # Проверить наличие бд, если бд нет - создать, если есть - идём дальше
@@ -57,6 +58,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     # print(f'\n🫢🫢🫢',end="")
     # for i in message.from_user:
     #     print(i)
+
 
     builder = InlineKeyboardBuilder()
     builder.add(
@@ -88,14 +90,27 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
     
     if message.text.lower() == user_data[6]:
         answer = await streak(message.from_user.username, message.chat.id,1)
+
         if answer == 1:
             print('Стрик увеличен')
         else:
+            if answer == 'Вы открыли новое слово!':
+                await message.answer_sticker(r'CAACAgQAAxkBAAEL25ZmESgcK74UZ2GXiTRtOOXQLxtkwQACigkAAqDU6VPBDJvf9u5l1jQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
+
+            elif answer == 'HSK 1 позади, поздравляю!':
+                await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
+
+            elif answer == 'HSK 2 взят, добро пожаловать в HSK 3. Поздравляю!':
+                await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
+    
+
             await message.answer(f'{answer}')
 
         hanzi = await irg_generate(message.from_user.username, message.chat.id)
         await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
         
+
+
     elif message.text.lower() == '/exit':
         await state.set_state(ChiStatus.CHI_OFF)
         await message.answer(f"Игра завершена, возвращайся ещё:3")
@@ -173,6 +188,17 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         if await streak(message.from_user.username, message.chat.id,-1) == -1:
             print('Стрик уменьшен')
         await message.answer(f"Не верно, {user_data[7]}")
+
+
+
+@router.message(ChiStatus.CHI_ON_1, F)
+async def free_user_text(message: types.Message, bot: Bot, state: FSMContext):
+        print(f'\n🫢🫢🫢',end="")
+        for i in message.from_user:
+            print(i)
+
+        print(F.sti)
+
 
 
 
