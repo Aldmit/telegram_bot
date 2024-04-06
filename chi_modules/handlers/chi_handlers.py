@@ -120,7 +120,6 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
     
     elif '/restore' in message.text.lower():
         split_message = message.text.lower().split(' ', maxsplit=1)
-        user_data = await db_get_data(message.from_user.username, message.chat.id)
 
         try:
             if split_message[1] is None:
@@ -147,8 +146,8 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         
         await message.answer(f"Кандзи {split_message[1]} успешно восстановлено и доступно для повторения :3")
 
-        hanzi = await irg_generate(message.from_user.username, message.chat.id)
-        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        # hanzi = await irg_generate(message.from_user.username, message.chat.id)
+        # await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
         
     # Получение информации об иероглифе
     elif '/info' in message.text.lower():
@@ -288,8 +287,8 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         
         await message.answer(f"Кандзи {split_message[1]} успешно восстановлено и доступно для повторения :3")
 
-        hanzi = await irg_generate(message.from_user.username, message.chat.id)
-        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        # hanzi = await irg_generate(message.from_user.username, message.chat.id)
+        # await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
         
     else:
         answer = list()
