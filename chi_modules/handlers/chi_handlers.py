@@ -122,10 +122,11 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         split_message = message.text.lower().split(' ', maxsplit=1)
         user_data = await db_get_data(message.from_user.username, message.chat.id)
 
-        if split_message[1] is None:
-            await message.answer("Ошибка: не переданы аргументы")
-            return
         try:
+            if split_message[1] is None:
+                await message.answer("Ошибка: не переданы аргументы")
+                return
+
             wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
             list_with_words = ', '.join(wordlist.values())
             if split_message[1] not in list_with_words:
@@ -135,7 +136,7 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
                     "/restore 爱"
                 )
                 return
-        except ValueError:
+        except:
             await message.answer(
                 "Ошибка: неправильный формат команды. Пример:\n"
                 "/restore hanzi\n"
@@ -149,7 +150,26 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
         hanzi = await irg_generate(message.from_user.username, message.chat.id)
         await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
         
+    # Получение информации об иероглифе
+    elif '/info' in message.text.lower():
+        split_message = message.text.lower().split(' ', maxsplit=1)
 
+        try:
+            if split_message[1] is None:
+                await message.answer("Ошибка: не переданы аргументы")
+                return
+        
+            answer = await get_hanzi_info(split_message[1])
+            await message.answer(f'{answer[0]} -> {answer[1]} -> {answer[2]}')
+
+        except:
+            await message.answer(
+                "Ошибка: неправильный формат команды. Пример:\n"
+                "/info hanzi\n"
+                "/info 爱"
+            )
+            return
+        
     else:
         if await streak(message.from_user.username, message.chat.id,-1) == -1:
             print('Стрик уменьшен')
@@ -190,11 +210,11 @@ async def start_chinese_train_2(callback: types.CallbackQuery, state: FSMContext
 
     a = await db_update_textlist(callback.from_user.username, callback.from_user.id)
 
-    await callback.message.answer(f"{await db_get_textgen(callback.from_user.username, callback.from_user.id)}")
+    await callback.message.answer(f"{(await db_get_textgen(callback.from_user.username, callback.from_user.id)).replace(',', '')}")
     
     await state.set_state(ChiStatus.CHI_ON_2)
     await callback.answer(
-        text="Перед тобой рандомный китайский текст из иероглифов, которые ты уже знаешь. Просто перепиши его)\n\nУспехов!",
+        text="Перед тобой случайный китайский текст из иероглифов, которые ты уже знаешь. Перепиши его, чтобы закрепить своё знание.\n\nУспехов!",
         show_alert=True
     )
 
@@ -202,23 +222,88 @@ async def start_chinese_train_2(callback: types.CallbackQuery, state: FSMContext
 @router.message(ChiStatus.CHI_ON_2, F.text)
 async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
     text_gen = await db_get_textgen(message.from_user.username, message.chat.id)
+    text_gen = text_gen.replace(',','')
 
     if message.text.lower() == text_gen:
         await db_update_textlist(message.from_user.username, message.chat.id)
-        await message.answer(f"{await db_get_textgen(message.from_user.username, message.chat.id)}")
+        await message.answer(f"{(await db_get_textgen(message.from_user.username, message.chat.id)).replace(',', '')}")
 
         
     elif message.text.lower() == '/exit':
         await state.set_state(ChiStatus.CHI_OFF)
         await message.answer(f"Игра завершена, возвращайся ещё:3")
 
+    # Получение информации об иероглифе
+    elif '/info' in message.text.lower():
+        split_message = message.text.lower().split(' ', maxsplit=1)
+
+        try:
+            if split_message[1] is None:
+                await message.answer("Ошибка: не переданы аргументы")
+                return
+        
+            answer = await get_hanzi_info(split_message[1])
+            await message.answer(f'{answer[0]} -> {answer[1]} -> {answer[2]}')
+
+        except:
+            await message.answer(
+                "Ошибка: неправильный формат команды. Пример:\n"
+                "/info hanzi\n"
+                "/info 爱"
+            )
+            return
+        
+    # Показывает список выученных пользователем слов
+    elif message.text.lower() == '/wordlist':
+        wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
+        await message.answer(', '.join(wordlist.values()))
+
+    # Восстанавливает слово в режиме обучения из режима практики
+    elif '/restore' in message.text.lower():
+        split_message = message.text.lower().split(' ', maxsplit=1)
+
+        try:
+            if split_message[1] is None:
+                await message.answer("Ошибка: не переданы аргументы")
+                return
+
+            wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
+            list_with_words = ', '.join(wordlist.values())
+            if split_message[1] not in list_with_words:
+                await message.answer(
+                    "Ошибка: в вордлисте слова нет. Проверьте правильность слова:\n"
+                    "/restore [hanzi]\n"
+                    "/restore 爱"
+                )
+                return
+        except:
+            await message.answer(
+                "Ошибка: неправильный формат команды. Пример:\n"
+                "/restore hanzi\n"
+                "/restore 爱"
+            )
+            return
+       
+        await db_update_wordlist(message.from_user.username, message.chat.id, split_message[1], -1)
+        
+        await message.answer(f"Кандзи {split_message[1]} успешно восстановлено и доступно для повторения :3")
+
+        hanzi = await irg_generate(message.from_user.username, message.chat.id)
+        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        
     else:
-        await message.answer(f"Не верно, попробуй ещё раз:3")
+        answer = list()
+        user_message = ""
+        i = 0
 
+        got_hanzi_text = (await db_get_textgen(message.from_user.username, message.chat.id)).split(',')
 
+        while i < len(got_hanzi_text):
+            answer = await get_hanzi_info(got_hanzi_text[i])
+            user_message += f"▫ {answer[0]} > {answer[1]} > {answer[2]}\n"
+            i +=1
 
-
-
+        await message.answer(f"Не верно, попробуй ещё раз:3\n\n= = = Подсказка = = =\n{user_message}")
 
 
 

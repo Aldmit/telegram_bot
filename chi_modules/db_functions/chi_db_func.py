@@ -222,7 +222,9 @@ async def db_update_textlist(name,password):
     # print(f"\n === 4 === \n{int(ceil(sqrt(len(hanzi_text))))}\n\n")
     # print(f"\n === 5 === \n{hanzi_text[:int(ceil(sqrt(len(hanzi_text))))]}\n\n")
 
-    hanzi_text = ''.join(hanzi_text[:int(ceil(sqrt(len(hanzi_text))))]) # готовый перемешанный текст
+    # hanzi_text = ','.join(hanzi_text[:int(ceil(sqrt(len(hanzi_text))))]) # готовый перемешанный текст
+
+    hanzi_text = ','.join(hanzi_text[:5]) # готовый перемешанный текст
 
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()

@@ -34,33 +34,6 @@ async def irg_generate(name,password):
     db_update_hanzi(a,b,name,password)
     return [a, b, c]
 
-    # r = random.randint(0, sub_level[3])
-    # if hsk[r]["hanzi"] not in wordlist.values():  # проверка на словарь
-    #     a = hsk[r]["hanzi"]
-    #     b = hsk[r]["pinyin"]
-    #     c = hsk[r]["translations"]["rus"][0]
-    #     db_update_hanzi(a,b,name,password)
-    #     # print('Работает else')
-    #     return [a, b, c]
-    # else:
-    #     return await irg_generate(name,password)
-    
-    # print(f'Проверка числа в генераторе {sub_level[3]},{sub_level[4]} += Проверка данныз из wordlist: {wordlist}')
-    # if sub_level[3] > 15:
-    #     r = random.randint(sub_level[3]-15, sub_level[3])
-    #     if hsk[r]["hanzi"] not in wordlist.values():
-    #         a = hsk[r]["hanzi"]
-    #         b = hsk[r]["pinyin"]
-    #         c = hsk[r]["translations"]["rus"][0]
-    #         db_update_hanzi(a,b,name,password)
-    #         print('Работает sub_level')
-    #         return [a, b, c]
-    #     else:
-    #         return await irg_generate(name,password)
-    # else:
-
-
-
 
 async def kanzi_text_shuffle(hanzi_list, size):
     hanzi_text = list()
@@ -69,4 +42,14 @@ async def kanzi_text_shuffle(hanzi_list, size):
     random.shuffle(hanzi_text)
 
     return ''.join(hanzi_text)
+
+
+async def get_hanzi_info(hanzi):
+    i=0
+    while i<len(hsk):
+        if hanzi == hsk[i]['hanzi']:
+            return (hsk[i]['hanzi'],hsk[i]['pinyin'],hsk[i]["translations"]["rus"][0])
+        else:
+            i+=1
+    return ("Не найдено.","","")
 
