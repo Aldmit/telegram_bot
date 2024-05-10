@@ -3,7 +3,7 @@ import logging
 
 from aiogram import Bot, Dispatcher
 from config import Config, load_config
-import chi_modules
+import core
 
 
 # Включаем логирование, чтобы не пропустить важные сообщения
@@ -27,8 +27,8 @@ dp.startup.register(start_bot)  # регистрируем в диспетчер
 dp.shutdown.register(stop_bot)  # регистрируем в диспетчере функцию по остановке
 
 
-dp.include_router(chi_modules.chi_help_func.router)
-dp.include_router(chi_modules.chi_handlers.router)
+dp.include_router(core.chi_help_func.router)
+dp.include_router(core.chi_handlers.router)
 
 
 # Запуск процесса поллинга новых апдейтов
