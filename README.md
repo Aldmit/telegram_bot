@@ -1,4 +1,4 @@
-![Preview CHI_BOT](chi_bot.jpg)
+![Preview CHI_BOT](chi_bot.png)
 
 # CHI_BOT
 
