@@ -1,3 +1,5 @@
+![Preview CHI_BOT](chi_bot.jpg)
+
 # CHI_BOT
 
 This bot was created to learn Chinese characters using the flashcard method. 
