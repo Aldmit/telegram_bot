@@ -15,7 +15,7 @@ path = os.path.dirname(os.path.abspath(__file__)) # Получение теку�
 file = open(f"{path}/hsk.json", "rb") # Открытие словаря для получения слов
 hsk = json.load(file)  # Разбираем полученные JSON данные в читабельный формат
 
-async def irg_generate(name,password,mode):
+async def irg_generate(name,password,mode=0):
     sub_level = await db_get_data(name,password)
     if mode=='off':
 
