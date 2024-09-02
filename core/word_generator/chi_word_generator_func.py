@@ -55,12 +55,24 @@ async def irg_generate(name,password,mode='off'):
 
         word_index = 0
         selected_word = list()
+        word_index = 0
+        selected_word = list()
 
         while (word_index <= sub_level[3]):
             if hsk[word_index]["hanzi"] not in wordlist.values():
                 selected_word.append(hsk[word_index])
             word_index+=1
+        while (word_index <= sub_level[3]):
+            if hsk[word_index]["hanzi"] not in wordlist.values():
+                selected_word.append(hsk[word_index])
+            word_index+=1
 
+        r = random.randint(0, len(selected_word)-1)
+        a = selected_word[r]["hanzi"]
+        b = selected_word[r]["pinyin"]
+        c = selected_word[r]["translations"]["rus"][0]
+        db_update_hanzi(a,b,name,password)
+        return [a, b, c]
         r = random.randint(0, len(selected_word)-1)
         a = selected_word[r]["hanzi"]
         b = selected_word[r]["pinyin"]

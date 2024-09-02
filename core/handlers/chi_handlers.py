@@ -16,12 +16,14 @@ from ..word_generator import *
 from ..level_system import *
 
 # Было бы круто вынести обработчики каждой отдельной тренировки в отдельный файл, чтобы с этим было удобнее работать
+# Было бы круто вынести обработчики каждой отдельной тренировки в отдельный файл, чтобы с этим было удобнее работать
 
 from aiogram import Router
 
 # Инициализируем роутер уровня модуля
 router = Router()
 
+# Состояния здесь нужны, чтобы понимать, какие из обработчиков слушать (у обработчиков могут быть одинакоые команды, но нам важно, какой у них при этом статус состояния)
 # Состояния здесь нужны, чтобы понимать, какие из обработчиков слушать (у обработчиков могут быть одинакоые команды, но нам важно, какой у них при этом статус состояния)
 class ChiStatus(StatesGroup):
     CHI_ON_1 = State()
@@ -108,6 +110,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 # ПЕРВЫЙ ТИП ТРЕНИРОВКИ
 
+# ПЕРВЫЙ ТИП ТРЕНИРОВКИ
+
 @router.callback_query(F.data == "chinese_train_1")
 async def start_chinese_train_1(callback: types.CallbackQuery, state: FSMContext):
     hanzi = await irg_generate(callback.from_user.username, callback.from_user.id)
@@ -136,6 +140,9 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
                 await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
 
             elif answer == 'HSK 2 взят, добро пожаловать в HSK 3. Поздравляю!':
+                await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
+            
+            elif answer == 'HSK 3 взят, можешь смело переходить к HSK 4. Это большое достижение!':
                 await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
             
             elif answer == 'HSK 3 взят, можешь смело переходить к HSK 4. Это большое достижение!':
@@ -267,6 +274,7 @@ async def free_user_text(message: types.Message, bot: Bot, state: FSMContext):
 
 
 
+# ВТОРОЙ ТИП ТРЕНИРОВКИ
 # ВТОРОЙ ТИП ТРЕНИРОВКИ
 
 @router.callback_query(F.data == "chinese_train_2")
