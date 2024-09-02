@@ -2,7 +2,7 @@
 from aiogram.filters.command import Command, CommandObject, CommandStart # Позволяет ловить команды в обработчик по схеме Command('команда')
 from aiogram.types import Message,MessageEntity,FSInputFile, URLInputFile, BufferedInputFile, InputTextMessageContent, InlineQueryResultArticle # Работа с файлами
 
-from ..db_functions import *
+from ..data_layer import *
 
 
 from aiogram import Router

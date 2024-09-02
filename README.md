@@ -49,4 +49,3 @@ This bot was created to learn Chinese characters using the flashcard method.
 - **/restore** [handzi] - restores the word according to the Chinese character in the output.
 - **/info** [handzi] - shows information on Chinese characters.
 - **/exit** - terminates the application.
-

@@ -4,7 +4,7 @@ import random
 import json
 import os
 
-from ..db_functions import *
+from ..data_layer import *
 
 path = os.path.dirname(os.path.abspath(__file__)) # Получение текущего пути к файлу
 file = open(f"{path}/hsk.json", "rb") # Открытие словаря для получения слов
@@ -15,24 +15,58 @@ path = os.path.dirname(os.path.abspath(__file__)) # Получение теку�
 file = open(f"{path}/hsk.json", "rb") # Открытие словаря для получения слов
 hsk = json.load(file)  # Разбираем полученные JSON данные в читабельный формат
 
-async def irg_generate(name,password):
+async def irg_generate(name,password,mode='off'):
     sub_level = await db_get_data(name,password)
-    wordlist = await db_update_wordlist(name, password,'-',0)
+    if mode=='off':
 
-    word_index = 0
-    selected_word = list()
+        wordlist = ""
 
-    while (word_index <= sub_level[3]):
-        if hsk[word_index]["hanzi"] not in wordlist.values():
+        word_index = 0
+        selected_word = list()
+
+        while (word_index <= sub_level[3]):
             selected_word.append(hsk[word_index])
-        word_index+=1
+            word_index+=1
 
-    r = random.randint(0, len(selected_word)-1)
-    a = selected_word[r]["hanzi"]
-    b = selected_word[r]["pinyin"]
-    c = selected_word[r]["translations"]["rus"][0]
-    db_update_hanzi(a,b,name,password)
-    return [a, b, c]
+        r = random.randint(0, len(selected_word)-1)
+        a = selected_word[r]["hanzi"]
+        b = selected_word[r]["pinyin"]
+        c = selected_word[r]["translations"]["rus"][0]
+        db_update_hanzi(a,b,name,password)
+        return [a, b, c]
+
+
+    if mode=='user_dictionary':
+
+        wordlist = await db_get_user_dictionary(name, password)
+        if wordlist[0] is not '':
+            r = random.randint(0, len(wordlist)-1)
+            a = wordlist[r][0]
+            b = wordlist[r][1]
+            c = wordlist[r][2]
+            db_update_hanzi(a,b,name,password)
+            return [a, b, c]
+        else:
+            return ['not_dictionary',"Не задан пользовательский список слов."]
+
+
+    else:
+        wordlist = await db_update_wordlist(name, password,'-',0)
+
+        word_index = 0
+        selected_word = list()
+
+        while (word_index <= sub_level[3]):
+            if hsk[word_index]["hanzi"] not in wordlist.values():
+                selected_word.append(hsk[word_index])
+            word_index+=1
+
+        r = random.randint(0, len(selected_word)-1)
+        a = selected_word[r]["hanzi"]
+        b = selected_word[r]["pinyin"]
+        c = selected_word[r]["translations"]["rus"][0]
+        db_update_hanzi(a,b,name,password)
+        return [a, b, c]
 
 
 async def kanzi_text_shuffle(hanzi_list, size):

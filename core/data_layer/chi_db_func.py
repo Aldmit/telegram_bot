@@ -28,6 +28,13 @@ async def db_create(): # Создание базы
     cur.close()
     conn.close()
 
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS user_dictionary(id int auto_increment primary key, id_user varchar(50), user_pass varchar(50), upload_words varchar(50000))")
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 # = = = = = = = INSERTS = = = = = = = = = =
     
@@ -73,6 +80,18 @@ async def db_insert_textlist(name, password): # Заведение новой т
     cur.close()
     conn.close()
 
+async def db_insert_user_dictionary(name, password): # Заведение новой таблицы слов
+    name = name
+    password = password
+    upload_words = ""
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("INSERT INTO user_dictionary(id_user, user_pass, upload_words) VALUES ('%s', '%s', '%s')" %(name,password,upload_words))
+    conn.commit()
+    cur.close()
+    conn.close()
+
+
 
 # = = = = = = = GETS = = = = = = = = = =
     
@@ -98,6 +117,20 @@ async def db_get_textgen(name, password):
     conn.close()
 
     return text_gen[0][0]
+
+
+async def db_get_user_dictionary(name, password):
+    
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("SELECT upload_words FROM user_dictionary WHERE id_user='%s' AND user_pass='%s'" %(name,password))
+    upload_words = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    upload_words = json.loads(upload_words[0][0]) # Распаковать из json
+
+    return upload_words
     
 
 # = = = = = = = UPDATES = = = = = = = = = =
@@ -199,10 +232,6 @@ async def db_update_wordlist(name,password,hanzi,func_mode):
 
 
 
-
-
-
-
 async def db_update_textlist(name,password):
 
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
@@ -234,3 +263,27 @@ async def db_update_textlist(name,password):
     conn.close()
 
     return hanzi_text
+
+
+
+
+async def db_update_user_dictionary(name,password,upload_words):
+    
+    # Получаем сырой текст, парсим и заворачиваем в json
+
+    upload_words = upload_words.replace('\n','').split('* ')
+    upload_words.pop(0)
+    
+    for i in range(len(upload_words)):
+        upload_words[i] = upload_words[i].split(' - ')
+    
+    json_pack = json.dumps(upload_words) # Упаковать в json
+    
+    conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    cur = conn.cursor()
+    cur.execute("UPDATE user_dictionary SET upload_words='%s' WHERE id_user='%s' AND user_pass='%s'" %(json_pack,name,password))
+    cur.close()
+    conn.close()
+
+    return f"Пользовательский список слов обновлён."
+    

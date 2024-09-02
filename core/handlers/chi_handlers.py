@@ -11,20 +11,25 @@ from aiogram.utils.keyboard import InlineKeyboardBuilder # Инлайновые 
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.fsm.context import FSMContext
 
-from ..db_functions import *
+from ..data_layer import *
 from ..word_generator import *
 from ..level_system import *
 
+# Было бы круто вынести обработчики каждой отдельной тренировки в отдельный файл, чтобы с этим было удобнее работать
 
 from aiogram import Router
 
 # Инициализируем роутер уровня модуля
 router = Router()
 
-
+# Состояния здесь нужны, чтобы понимать, какие из обработчиков слушать (у обработчиков могут быть одинакоые команды, но нам важно, какой у них при этом статус состояния)
 class ChiStatus(StatesGroup):
     CHI_ON_1 = State()
     CHI_ON_2 = State()
+    CHI_ON_3 = State()
+    CHI_ON_4 = State()
+    CHI_ON_5 = State()
+    CHI_ON_6 = State()
     CHI_OFF = State()
 
 
@@ -50,6 +55,11 @@ async def cmd_start(message: types.Message, state: FSMContext):
         await db_get_textgen(message.from_user.username, message.chat.id)
     except:
         await db_insert_textlist(message.from_user.username, message.chat.id)
+    
+    try:
+        await db_get_user_dictionary(message.from_user.username, message.chat.id)
+    except:
+        await db_insert_user_dictionary(message.from_user.username, message.chat.id)
 
     # print(f'🫢🫢🫢',end="")
     # for i in message.chat:
@@ -60,18 +70,43 @@ async def cmd_start(message: types.Message, state: FSMContext):
     #     print(i)
 
 
-    builder = InlineKeyboardBuilder()
-    builder.add(
-        types.InlineKeyboardButton(
-            text="Начать игру в 汉语", callback_data="chinese_train_1"
-        ),types.InlineKeyboardButton(
-            text="Практиковать слова", callback_data="chinese_train_2"
-        )
-    )
+    # builder = InlineKeyboardBuilder()
+    # builder.row(width=2).add(
+    #     types.InlineKeyboardButton( 
+    #         text="Учить 汉语", callback_data="chinese_train_1"
+    #     ),types.InlineKeyboardButton(
+    #         text="Различать слова", callback_data="chinese_train_2"
+    #     ),types.InlineKeyboardButton(
+    #         text="Повторять слова", callback_data="chinese_train_3"
+    #     ),types.InlineKeyboardButton(
+    #         text="Учить пиньинь", callback_data="chinese_train_4"
+    #     )
+    # )
+
+    def get_keyboard():
+        buttons = [
+            [
+                types.InlineKeyboardButton(text="Учить 汉语", callback_data="chinese_train_1"),
+                types.InlineKeyboardButton(text="Различать слова", callback_data="chinese_train_2")
+            ],
+            [
+                types.InlineKeyboardButton(text="Повторять слова", callback_data="chinese_train_3"),
+                types.InlineKeyboardButton(text="Учить тона", callback_data="chinese_train_4")
+            ],
+            [
+                types.InlineKeyboardButton(text="Загрузить свой список слов", callback_data="chinese_train_5"),
+                types.InlineKeyboardButton(text="Учить свой список слов", callback_data="chinese_train_6")
+            ],
+        ]
+        keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+        return keyboard
+ 
     await message.answer(
-        "Добро пожаловать в CHI!\n\nПравила очень просты: чем больше правильных ответов даёшь, тем выше твой уровень, и тем больше новых слов тебе доступно.\n\nВо время игры доступны следующие базовые конманды:\n\n/exit - закончить\n/status - узнать текущий уровень\n\nГотов узнать сегодня новые слова?", reply_markup=builder.as_markup()
+        "Добро пожаловать в CHI!\n\nПравила очень просты: чем больше правильных ответов даёшь, тем выше твой уровень, и тем больше новых слов тебе доступно.\n\nВо время игры доступны следующие базовые конманды:\n\n/exit - закончить\n/status - узнать текущий уровень\n\nГотов узнать сегодня новые слова?", reply_markup=get_keyboard()
     )
 
+
+# ПЕРВЫЙ ТИП ТРЕНИРОВКИ
 
 @router.callback_query(F.data == "chinese_train_1")
 async def start_chinese_train_1(callback: types.CallbackQuery, state: FSMContext):
@@ -101,6 +136,9 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
                 await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
 
             elif answer == 'HSK 2 взят, добро пожаловать в HSK 3. Поздравляю!':
+                await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
+            
+            elif answer == 'HSK 3 взят, можешь смело переходить к HSK 4. Это большое достижение!':
                 await message.answer_sticker(r'CAACAgQAAxkBAAEL251mEShg8lEOQ_SDLXIQvXjGaz-QfgAC5gkAAhCmAVE9qaLjc1JouTQE') #  В качетсве аргумента sticker передаем id стикера который мы получили раннее
     
 
@@ -229,6 +267,7 @@ async def free_user_text(message: types.Message, bot: Bot, state: FSMContext):
 
 
 
+# ВТОРОЙ ТИП ТРЕНИРОВКИ
 
 @router.callback_query(F.data == "chinese_train_2")
 async def start_chinese_train_2(callback: types.CallbackQuery, state: FSMContext):
@@ -329,6 +368,235 @@ async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
             i +=1
 
         await message.answer(f"Не верно, попробуй ещё раз:3\n\n= = = Подсказка = = =\n{user_message}")
+
+
+
+
+
+
+# ТРЕТИЙ ТИП ТРЕНИРОВКИ
+
+@router.callback_query(F.data == "chinese_train_3")
+async def start_chinese_train_3(callback: types.CallbackQuery, state: FSMContext):
+    hanzi = await irg_generate(callback.from_user.username, callback.from_user.id,"off")
+    
+    await callback.message.answer(f"Введи кандзи:\n{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+    await state.set_state(ChiStatus.CHI_ON_3)
+    await callback.answer(
+        text="Повтори выученные ранее слова!\n\nВводи кандзи вида ‘爱’ через пиньинь.\n\nЕсли забыл - нажми на спойлер, чтобы подсмотреть.\n\nСтань ещё ближе к мечте)",
+        show_alert=True
+    )
+
+@router.message(ChiStatus.CHI_ON_3, F.text)
+async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
+    user_data = await db_get_data(message.from_user.username, message.chat.id)
+    
+    if message.text.lower() == user_data[6]:
+
+        hanzi = await irg_generate(message.from_user.username, message.chat.id, "off")
+        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        
+
+
+    elif message.text.lower() == '/exit':
+        await state.set_state(ChiStatus.CHI_OFF)
+        await message.answer(f"Игра завершена, возвращайся ещё:3")
+
+    elif message.text.lower() == '/status':
+        user_data = await db_get_data(message.from_user.username, message.chat.id)
+        print(user_data)
+        await message.answer(f"{user_data[0]}-{user_data[1]}\n\nТекущий уровень: {user_data[2]}\nУровень открытых слов: {user_data[3]}\nПрогресс: {user_data[4]}\nДействующий стрик: {user_data[5]}")
+        await message.answer(f"Команды работы со словарём:\n/wordlist – скрытые слова\n/skip – скрыть слово\n/restore [хандзи] – вернуть слово")
+
+    elif message.text.lower() == '/wordlist':
+        wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
+        await message.answer(', '.join(wordlist.values()))
+    
+    # Получение информации об иероглифе
+    elif '/info' in message.text.lower():
+        split_message = message.text.lower().split(' ', maxsplit=1)
+
+        try:
+            if split_message[1] is None:
+                await message.answer("Ошибка: не переданы аргументы")
+                return
+        
+            answer = await get_hanzi_info(split_message[1])
+            await message.answer(f'{answer[0]} -> {answer[1]} -> {answer[2]}')
+
+        except:
+            await message.answer(
+                "Ошибка: неправильный формат команды. Пример:\n"
+                "/info hanzi\n"
+                "/info 爱"
+            )
+            return
+        
+    else:
+        await message.answer(f"Не верно, {user_data[7]}")
+
+
+
+@router.message(ChiStatus.CHI_ON_3, F)
+async def free_user_text(message: types.Message, bot: Bot, state: FSMContext):
+        print(f'\n🫢🫢🫢',end="")
+        for i in message.from_user:
+            print(i)
+
+        print(F.sti)
+
+
+
+
+# ЧЕТВЁРТЫЙ ТИП ТРЕНИРОВКИ
+
+@router.callback_query(F.data == "chinese_train_4")
+async def start_chinese_train_4(callback: types.CallbackQuery, state: FSMContext):
+    hanzi = await irg_generate(callback.from_user.username, callback.from_user.id,"off")
+    
+    await callback.message.answer(f"Введи пиньинь ироглифа:\n{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+    await state.set_state(ChiStatus.CHI_ON_4)
+    await callback.answer(
+        text="Вводи пиньинь вида [huǒ chē zhàn] с тонами.\n\nИспользуй открытые иероглиф и перевод.\n\nЕсли забыл - нажми на спойлер, чтобы подсмотреть.\n\n\n\nБудь терпелив)",
+        show_alert=True
+    )
+
+@router.message(ChiStatus.CHI_ON_4, F.text)
+async def get_message_base(message: types.Message, bot: Bot, state: FSMContext):
+    user_data = await db_get_data(message.from_user.username, message.chat.id)
+    
+    if message.text.lower() == user_data[7]:
+
+        hanzi = await irg_generate(message.from_user.username, message.chat.id, "off")
+        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        
+
+
+    elif message.text.lower() == '/exit':
+        await state.set_state(ChiStatus.CHI_OFF)
+        await message.answer(f"Игра завершена, возвращайся ещё:3")
+
+    elif message.text.lower() == '/status':
+        user_data = await db_get_data(message.from_user.username, message.chat.id)
+        print(user_data)
+        await message.answer(f"{user_data[0]}-{user_data[1]}\n\nТекущий уровень: {user_data[2]}\nУровень открытых слов: {user_data[3]}\nПрогресс: {user_data[4]}\nДействующий стрик: {user_data[5]}")
+        await message.answer(f"Команды работы со словарём:\n/wordlist – скрытые слова\n/skip – скрыть слово\n/restore [хандзи] – вернуть слово")
+
+    elif message.text.lower() == '/wordlist':
+        wordlist = await db_update_wordlist(message.from_user.username, message.chat.id,'-',0)
+        await message.answer(', '.join(wordlist.values()))
+    
+    # Получение информации об иероглифе
+    elif '/info' in message.text.lower():
+        split_message = message.text.lower().split(' ', maxsplit=1)
+
+        try:
+            if split_message[1] is None:
+                await message.answer("Ошибка: не переданы аргументы")
+                return
+        
+            answer = await get_hanzi_info(split_message[1])
+            await message.answer(f'{answer[0]} -> {answer[1]} -> {answer[2]}')
+
+        except:
+            await message.answer(
+                "Ошибка: неправильный формат команды. Пример:\n"
+                "/info hanzi\n"
+                "/info 爱"
+            )
+            return
+        
+    else:
+        await message.answer(f"Не верно, {user_data[7]}")
+
+
+
+@router.message(ChiStatus.CHI_ON_4, F)
+async def free_user_text(message: types.Message, bot: Bot, state: FSMContext):
+        print(f'\n🫢🫢🫢',end="")
+        for i in message.from_user:
+            print(i)
+
+        print(F.sti)
+
+
+
+
+
+# ПЯТЫЙ РЕЖИМ РАБОТЫ
+
+@router.callback_query(F.data == "chinese_train_5")
+async def start_chinese_train_5(callback: types.CallbackQuery, state: FSMContext):
+
+    await callback.message.answer(f"Введите текст формата:\n\n* 爱 - ai - перевод\n* 爱 - ai - перевод\n* 爱 - ai - перевод\n\nНачинайте новый иероглиф с симфола * и разделяйте данные - c соответствующим числом пробелов, чтобы всё считалось корректно.")
+    await state.set_state(ChiStatus.CHI_ON_5)
+
+@router.message(ChiStatus.CHI_ON_5, F.text)
+async def upload_user_dictionary(message: types.Message, bot: Bot, state: FSMContext):
+    
+    msg = await db_update_user_dictionary(message.from_user.username, message.chat.id, message.text)
+    await state.set_state(ChiStatus.CHI_OFF)
+    await message.answer(f"{msg}")
+        
+
+
+# ШЕСТОЙ РЕЖИМ РАБОТЫ
+
+
+@router.callback_query(F.data == "chinese_train_6")
+async def start_chinese_train_6(callback: types.CallbackQuery, state: FSMContext):
+
+    hanzi = await irg_generate(callback.from_user.username, callback.from_user.id,"user_dictionary")
+
+    if hanzi[0] is not 'not_dictionary':
+        await callback.message.answer(f"Введи иероглиф:\n{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        await state.set_state(ChiStatus.CHI_ON_6)
+        await callback.answer(
+            text="Вводи кандзи вида ‘爱’ через пиньинь.\n\nЕсли забыл - нажми на спойлер, чтобы подсмотреть.\n\nУспехов!",
+            show_alert=True
+        )
+    else:
+        await callback.answer(
+            text=hanzi[1],
+            show_alert=True
+        )
+
+@router.message(ChiStatus.CHI_ON_6, F.text)
+async def get_message_user_dictionary(message: types.Message, bot: Bot, state: FSMContext):
+    user_data = await db_get_data(message.from_user.username, message.chat.id)
+    
+    if message.text.lower() == user_data[6]:
+
+        hanzi = await irg_generate(message.from_user.username, message.chat.id, "user_dictionary")
+        await message.answer(f"{hanzi[0]} - <tg-spoiler>{hanzi[1]}</tg-spoiler> - {hanzi[2]}\n")
+        
+    elif message.text.lower() == '/exit':
+        await state.set_state(ChiStatus.CHI_OFF)
+        await message.answer(f"Игра завершена, возвращайся ещё:3")
+
+    elif message.text.lower() == '/wordlist':
+        wordlist = await db_get_user_dictionary(message.from_user.username, message.chat.id)
+        text = ''
+        text += '* ' + wordlist[0][0] + ' - ' + wordlist[0][1] + ' - ' + wordlist[0][2]
+        for i in range(len(wordlist)-1):
+            text += '\n* ' + wordlist[i+1][0] + ' - ' + wordlist[i+1][1] + ' - ' + wordlist[i+1][2]
+        await message.answer(text)
+        
+    else:
+        await message.answer(f"Не верно, {user_data[7]}")
+
+
+
+@router.message(ChiStatus.CHI_ON_6, F)
+async def free_user_dictionary_text(message: types.Message, bot: Bot, state: FSMContext):
+        print(f'\n🫢🫢🫢',end="")
+        for i in message.from_user:
+            print(i)
+
+        print(F.sti)
+
+
+
 
 
 
