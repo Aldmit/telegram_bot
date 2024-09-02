@@ -128,7 +128,13 @@ async def db_get_user_dictionary(name, password):
     cur.close()
     conn.close()
 
+    print('\n\n\nget1_json - - - ', upload_words)
+
+    print('\n\n\nget2_json - - - ', upload_words[0][0])
+
     upload_words = json.loads(upload_words[0][0]) # Распаковать из json
+
+    print('\n\n\nget_normal - - - ', upload_words)
 
     return upload_words
     
@@ -265,8 +271,6 @@ async def db_update_textlist(name,password):
     return hanzi_text
 
 
-
-
 async def db_update_user_dictionary(name,password,upload_words):
     
     # Получаем сырой текст, парсим и заворачиваем в json
@@ -276,14 +280,21 @@ async def db_update_user_dictionary(name,password,upload_words):
     
     for i in range(len(upload_words)):
         upload_words[i] = upload_words[i].split(' - ')
+
+    
+    print('upload_words - - - ', upload_words)
+
     
     json_pack = json.dumps(upload_words) # Упаковать в json
     
     conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
     cur = conn.cursor()
     cur.execute("UPDATE user_dictionary SET upload_words='%s' WHERE id_user='%s' AND user_pass='%s'" %(json_pack,name,password))
+    conn.commit()
     cur.close()
     conn.close()
+
+    print('update - - - ', json_pack)
 
     return f"Пользовательский список слов обновлён."
     

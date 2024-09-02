@@ -553,6 +553,13 @@ async def upload_user_dictionary(message: types.Message, bot: Bot, state: FSMCon
 
 @router.callback_query(F.data == "chinese_train_6")
 async def start_chinese_train_6(callback: types.CallbackQuery, state: FSMContext):
+    
+    # conn = sq.connect("database.sql") # Работа с подключением к БД через встроенный import sq
+    # cur = conn.cursor()
+    # cur.execute("CREATE TABLE IF NOT EXISTS user_dictionary(id int auto_increment primary key, id_user varchar(50), user_pass varchar(50), upload_words varchar(50000))")
+    # conn.commit()
+    # cur.close()
+    # conn.close()
 
     hanzi = await irg_generate(callback.from_user.username, callback.from_user.id,"user_dictionary")
 

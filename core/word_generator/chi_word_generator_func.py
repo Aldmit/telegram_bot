@@ -73,12 +73,6 @@ async def irg_generate(name,password,mode='off'):
         c = selected_word[r]["translations"]["rus"][0]
         db_update_hanzi(a,b,name,password)
         return [a, b, c]
-        r = random.randint(0, len(selected_word)-1)
-        a = selected_word[r]["hanzi"]
-        b = selected_word[r]["pinyin"]
-        c = selected_word[r]["translations"]["rus"][0]
-        db_update_hanzi(a,b,name,password)
-        return [a, b, c]
 
 
 async def kanzi_text_shuffle(hanzi_list, size):
